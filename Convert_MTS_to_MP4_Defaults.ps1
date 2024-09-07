@@ -55,7 +55,7 @@ foreach ($inputFile in $inputFiles) {
 	$inputSizes += $inputSize
 
 	# Extract the metadata from the original file using exiftool
-	Write-Host "`n[$currentFile/$totalFiles] Extracting metadata for $($inputFile.Name)..." -ForegroundColor $colorHighlight
+	Write-Host "`n[$currentFile/$totalFiles] Extracting metadata for $($inputFile.Name)..."
 	$exifData = & exiftool -json "$filePath" | ConvertFrom-Json
 
 	# Extract relevant metadata from the JSON object
@@ -94,14 +94,14 @@ foreach ($inputFile in $inputFiles) {
 		Write-Host "[$currentFile/$totalFiles] Video is interlaced. Adding de-interlacing filter (yadif)." -ForegroundColor $colorHighlight
 		$ffmpegCommand += " -vf yadif"
 	} else {
-		Write-Host "[$currentFile/$totalFiles] Video is not interlaced. No de-interlacing needed." -ForegroundColor $colorSuccess
+		Write-Host "[$currentFile/$totalFiles] Video is not interlaced. No de-interlacing needed."
 	}
 
 	# Add the output file to the command
 	$ffmpegCommand += " `"$outputFile`""
 
 	# Run the FFmpeg command
-	Write-Host "[$currentFile/$totalFiles] Converting $($file.Name) to MP4 using $videoCodec..." -ForegroundColor $colorHighlight
+	Write-Host "[$currentFile/$totalFiles] Converting $($inputFile.Name) to $(formattedDate).mp4..."
 	Invoke-Expression $ffmpegCommand
 
 	# Prepare the command to add metadata to the MP4 file
@@ -124,7 +124,7 @@ foreach ($inputFile in $inputFiles) {
 	# Add the output file path to the command
 	$command += "$outputFile"
 
-	Write-Host "[$currentFile/$totalFiles] Writing XMP and QuickTime metadata to $($outputFile)..." -ForegroundColor $colorHighlight
+	Write-Host "[$currentFile/$totalFiles] Writing EXIF and XMP metadata..."
 
 	# Apply the metadata using exiftool
 	& exiftool @command
@@ -133,7 +133,7 @@ foreach ($inputFile in $inputFiles) {
 	$outputSize = [math]::round((Get-Item $outputFile).Length / 1MB, 2)
 	$outputSizes += $outputSize
 
-	Write-Host "[$currentFile/$totalFiles] Finished processing $($inputFile.Name). Output saved as $formattedDate.mp4." -ForegroundColor $colorSuccess
+	Write-Host "[$currentFile/$totalFiles] Finished processing $($inputFile.Name). Output saved as $($outputFile)." -ForegroundColor $colorSuccess
 	Write-Host "`n$line"
 }
 
@@ -161,7 +161,7 @@ Write-Host "Encoding speed preset: $speedPreset"
 # Individual file summary
 Write-Host "`nIndividual Files" -ForegroundColor $colorHighlight
 for ($i = 0; $i -lt $inputFiles.Count; $i++) {
-    Write-Host "`n$($inputFiles[$i].Name) > $($outputFiles[$i])"
+	Write-Host "`n$($inputFiles[$i].Name) > $($outputFiles[$i])"
 	Write-Host "Input Size: $($inputSizes[$i]) MB | Output Size: $($outputSizes[$i]) MB | Change: $([math]::round((($outputSizes[$i] - $inputSizes[$i]) / $inputSizes[$i]) * 100, 2))%"
 }
 
