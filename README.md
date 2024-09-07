@@ -10,7 +10,7 @@ There's a `Defaults` script version if you don't want any prompts, just a one cl
 
 This script has only been tested on **Windows 10**.
 
-## Disclaimer
+### Disclaimer
 
 ChatGPT 4o was used in writing this script.
 
@@ -19,8 +19,8 @@ Also, always be careful running scripts on your device. This script is intended 
 ## Features
 
 - Converts `.MTS` files to `.MP4` while preserving some original EXIF metadata.
-- Offers a choice between **Intel CPU (x264)** and **NVIDIA GPU (NVENC)** for encoding.
-- Allows control over encoding speed and file size using **FFmpeg** presets (1-8), with a balanced **medium** preset as the default.
+- Offers choices for CRF, Quality, and encoding method (**Software/CPU** or **Hardware/NVIDIA GPU**).
+- Carries over important **EXIF** metadata like Record Date and attempts to carry over camera info into XMP.
 - Automatically names output files based on the **Recorded Date** in the format `YYYY-MM-DD_HH-MM-SS.mp4`.
 
 ## Prerequisites
@@ -35,14 +35,14 @@ Before using this script, ensure you have the following tools installed and adde
    ExifTool is a platform-independent Perl library plus a command-line application for reading, writing, and editing meta-information in a wide variety of files.  
    Download it [here](https://exiftool.org/#downloads).
 
-### Adding FFmpeg and ExifTool to Path
+### Adding FFmpeg and ExifTool to PATH
 
-To ensure that `FFmpeg` and `ExifTool` can be accessed globally by this script, you need to add them to your system’s Path:
+To ensure that `FFmpeg` and `ExifTool` can be accessed globally by this script, you need to add them to your system’s PATH:
 
 1. Right-click on **This PC** and select **Properties**.
 2. Select **Advanced system settings**.
 3. Click the **Environment Variables** button.
-4. In the **System variables** section, find the `Path` variable, select it, and click **Edit**.
+4. In the **System variables** section, find the `PATH` variable, select it, and click **Edit**.
 5. Click **New**, and add the directory paths where `FFmpeg` and `ExifTool` are located.
 6. Click **OK** to save and close all windows.
 
@@ -51,7 +51,7 @@ To ensure that `FFmpeg` and `ExifTool` can be accessed globally by this script, 
 1. Clone or download this repository (or just download the `.ps1` file).
 2. Ensure you have **FFmpeg** and **ExifTool** installed and added to your system PATH.
 3. Run the script through Powershell or by right-clicking on the script file and selecting **Run with PowerShell** (Use the `Defaults` version if you want a no-prompt experience, just a one click run with some recommended defaults).
-4. Follow the on-screen prompts to select input/output folders (they can be relative to your file location), video quality, and encoding method.
+4. Follow the on-screen prompts to select input/output folders (they can be relative to your script location), video quality, and encoding method.
 
 ## Acknowledgements
 
