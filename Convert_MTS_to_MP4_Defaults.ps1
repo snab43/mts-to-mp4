@@ -65,13 +65,10 @@ foreach ($inputFile in $inputFiles) {
 	$fNumber = $exifData.FNumber
 	$exposureTime = $exifData.ExposureTime
 	$whiteBalance = $exifData.WhiteBalance
-	$gain = $exifData.Gain
 	$exposureProgram = $exifData.ExposureProgram
-	$focus = $exifData.Focus
-	$imageStabilization = $exifData.ImageStabilization
 
 	if (-not $recordedDate) {
-		Write-Host "Error: Could not extract 'Recorded date'. Skipping $($inputFile.Name)" -ForegroundColor $colorError
+		Write-Host "[$currentFile/$totalFiles] Error: Could not extract 'Recorded date'. Skipping $($inputFile.Name)" -ForegroundColor $colorError
 		continue
 	}
 
@@ -85,27 +82,26 @@ foreach ($inputFile in $inputFiles) {
 	$outputFile = Join-Path $outputFolder "$formattedDate.mp4"
 	$outputFiles += "$formattedDate.mp4"
 
-	Write-Host "[$currentFile/$totalFiles] Converting $($file.Name) to MP4 using $videoCodec with CRF=$crfValue and preset=$speedPreset..." -ForegroundColor $colorHighlight
-
 	# Check if the video is interlaced
-	Write-Host "Checking for interlaced footage..."
+	Write-Host "[$currentFile/$totalFiles] Checking for interlaced footage..."
 	$isInterlaced = & ffprobe -v error -select_streams v:0 -show_entries stream=field_order -of default=noprint_wrappers=1:nokey=1 "$filePath"
 
 	# Prepare the base FFmpeg command
-	$ffmpegCommand = "ffmpeg -i `"$filePath`" -c:v $videoCodec -preset $speedPreset -crf $crfValue -c:a ac3 -b:a $audioBitratePreset"
+	$ffmpegCommand = "ffmpeg -loglevel warning -stats -i `"$filePath`" -c:v $videoCodec -preset $speedPreset -crf $crfValue -c:a ac3 -b:a $audioBitratePreset"
 
 	# Add de-interlacing filter if the video is interlaced
 	if ($isInterlaced -eq "tt" -or $isInterlaced -eq "tb" -or $isInterlaced -eq "bt" -or $isInterlaced -eq "bb") {
-		Write-Host "Video is interlaced. Applying de-interlacing filter (yadif)." -ForegroundColor $colorHighlight
+		Write-Host "[$currentFile/$totalFiles] Video is interlaced. Adding de-interlacing filter (yadif)." -ForegroundColor $colorHighlight
 		$ffmpegCommand += " -vf yadif"
 	} else {
-		Write-Host "Video is not interlaced. No de-interlacing needed." -ForegroundColor $colorSuccess
+		Write-Host "[$currentFile/$totalFiles] Video is not interlaced. No de-interlacing needed." -ForegroundColor $colorSuccess
 	}
 
 	# Add the output file to the command
 	$ffmpegCommand += " `"$outputFile`""
 
 	# Run the FFmpeg command
+	Write-Host "[$currentFile/$totalFiles] Converting $($file.Name) to MP4 using $videoCodec..." -ForegroundColor $colorHighlight
 	Invoke-Expression $ffmpegCommand
 
 	# Prepare the command to add metadata to the MP4 file
@@ -123,10 +119,7 @@ foreach ($inputFile in $inputFiles) {
 	if ($fNumber) { $command += "-XMP:FNumber=$fNumber" }
 	if ($exposureTime) { $command += "-XMP:ExposureTime=$exposureTime" }
 	if ($whiteBalance) { $command += "-XMP:WhiteBalance=$whiteBalance" }
-	if ($gain) { $command += "-XMP:Gain=$gain" }
 	if ($exposureProgram) { $command += "-XMP:ExposureProgram=$exposureProgram" }
-	if ($focus) { $command += "-XMP:Focus=$focus" }
-	if ($imageStabilization) { $command += "-XMP:ImageStabilization=$imageStabilization" }
 
 	# Add the output file path to the command
 	$command += "$outputFile"
@@ -140,7 +133,7 @@ foreach ($inputFile in $inputFiles) {
 	$outputSize = [math]::round((Get-Item $outputFile).Length / 1MB, 2)
 	$outputSizes += $outputSize
 
-	Write-Host "[$currentFile/$totalFiles] Finished processing $($inputFile.Name). Output saved as $formattedDate.mp4" -ForegroundColor $colorSuccess
+	Write-Host "[$currentFile/$totalFiles] Finished processing $($inputFile.Name). Output saved as $formattedDate.mp4." -ForegroundColor $colorSuccess
 	Write-Host "`n$line"
 }
 

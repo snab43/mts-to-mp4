@@ -63,7 +63,7 @@ Write-Host "Default: '4'" -ForegroundColor $colorSecondary
 $audioBitrateChoice = Read-Host "Enter 1 to 5"
 if (-not $audioBitrateChoice) {
     $audioBitrateChoice = 4
-    Write-Host "Using default value of '256 kbps' audio bitrate" -ForegroundColor $colorSuccess
+    Write-Host "Using default value of '256 kbps' audio bitrate." -ForegroundColor $colorSuccess
 }
 
 $audioBitratePreset = ""
@@ -73,7 +73,7 @@ switch ($audioBitrateChoice) {
 	3 { $audioBitratePreset = "192k" }
 	4 { $audioBitratePreset = "256k" }
 	5 { $audioBitratePreset = "320k" }
-	default { $speedPreset = "256k"; Write-Host "Invalid option. Defaulting to '256 kbps' bitrate." -ForegroundColor $colorError }
+	default { $audioBitratePreset = "256k"; Write-Host "Invalid option. Defaulting to '256 kbps' bitrate." -ForegroundColor $colorError }
 }
 
 # Get encoding method
@@ -85,7 +85,7 @@ Write-Host "Default: '1'" -ForegroundColor $colorSecondary
 $encodingChoice = Read-Host "Enter 1 or 2"
 if (-not $encodingChoice) {
     $videoCodec = "libx264"
-    Write-Host "Using default value of 'CPU (libx264) encoding'" -ForegroundColor $colorSuccess
+    Write-Host "Using default value of 'CPU (libx264)' encoding." -ForegroundColor $colorSuccess
 } elseif ($encodingChoice -eq 1) {
 	$videoCodec = "libx264"
 } elseif ($encodingChoice -eq 2) {
@@ -110,7 +110,7 @@ Write-Host "Default: '4'" -ForegroundColor $colorSecondary
 $encodingSpeed = Read-Host "Enter 1 to 9"
 if (-not $encodingSpeed) {
     $encodingSpeed = 4
-    Write-Host "Using default value of 'Medium' encoding speed" -ForegroundColor $colorSuccess
+    Write-Host "Using default value of 'Medium' encoding speed." -ForegroundColor $colorSuccess
 }
 
 $speedPreset = ""
@@ -173,13 +173,10 @@ foreach ($inputFile in $inputFiles) {
 	$fNumber = $exifData.FNumber
 	$exposureTime = $exifData.ExposureTime
 	$whiteBalance = $exifData.WhiteBalance
-	$gain = $exifData.Gain
 	$exposureProgram = $exifData.ExposureProgram
-	$focus = $exifData.Focus
-	$imageStabilization = $exifData.ImageStabilization
 
 	if (-not $recordedDate) {
-		Write-Host "Error: Could not extract 'Recorded date'. Skipping $($inputFile.Name)" -ForegroundColor $colorError
+		Write-Host "[$currentFile/$totalFiles] Error: Could not extract 'Recorded date'. Skipping $($inputFile.Name)" -ForegroundColor $colorError
 		continue
 	}
 
@@ -193,27 +190,26 @@ foreach ($inputFile in $inputFiles) {
 	$outputFile = Join-Path $outputFolder "$formattedDate.mp4"
 	$outputFiles += "$formattedDate.mp4"
 
-	Write-Host "[$currentFile/$totalFiles] Converting $($file.Name) to MP4 using $videoCodec with CRF=$crfValue and preset=$speedPreset..." -ForegroundColor $colorHighlight
-
 	# Check if the video is interlaced
-	Write-Host "Checking for interlaced footage..."
+	Write-Host "[$currentFile/$totalFiles] Checking for interlaced footage..."
 	$isInterlaced = & ffprobe -v error -select_streams v:0 -show_entries stream=field_order -of default=noprint_wrappers=1:nokey=1 "$filePath"
 
 	# Prepare the base FFmpeg command
-	$ffmpegCommand = "ffmpeg -i `"$filePath`" -c:v $videoCodec -preset $speedPreset -crf $crfValue -c:a ac3 -b:a $audioBitratePreset"
+	$ffmpegCommand = "ffmpeg -loglevel warning -stats -i `"$filePath`" -c:v $videoCodec -preset $speedPreset -crf $crfValue -c:a ac3 -b:a $audioBitratePreset"
 
 	# Add de-interlacing filter if the video is interlaced
 	if ($isInterlaced -eq "tt" -or $isInterlaced -eq "tb" -or $isInterlaced -eq "bt" -or $isInterlaced -eq "bb") {
-		Write-Host "Video is interlaced. Applying de-interlacing filter (yadif)." -ForegroundColor $colorHighlight
+		Write-Host "[$currentFile/$totalFiles] Video is interlaced. Adding de-interlacing filter (yadif)." -ForegroundColor $colorHighlight
 		$ffmpegCommand += " -vf yadif"
 	} else {
-		Write-Host "Video is not interlaced. No de-interlacing needed." -ForegroundColor $colorSuccess
+		Write-Host "[$currentFile/$totalFiles] Video is not interlaced. No de-interlacing needed." -ForegroundColor $colorSuccess
 	}
 
 	# Add the output file to the command
 	$ffmpegCommand += " `"$outputFile`""
 
 	# Run the FFmpeg command
+	Write-Host "[$currentFile/$totalFiles] Converting $($file.Name) to MP4 using $videoCodec..." -ForegroundColor $colorHighlight
 	Invoke-Expression $ffmpegCommand
 
 	# Prepare the command to add metadata to the MP4 file
@@ -231,10 +227,7 @@ foreach ($inputFile in $inputFiles) {
 	if ($fNumber) { $command += "-XMP:FNumber=$fNumber" }
 	if ($exposureTime) { $command += "-XMP:ExposureTime=$exposureTime" }
 	if ($whiteBalance) { $command += "-XMP:WhiteBalance=$whiteBalance" }
-	if ($gain) { $command += "-XMP:Gain=$gain" }
 	if ($exposureProgram) { $command += "-XMP:ExposureProgram=$exposureProgram" }
-	if ($focus) { $command += "-XMP:Focus=$focus" }
-	if ($imageStabilization) { $command += "-XMP:ImageStabilization=$imageStabilization" }
 
 	# Add the output file path to the command
 	$command += "$outputFile"
@@ -248,7 +241,7 @@ foreach ($inputFile in $inputFiles) {
 	$outputSize = [math]::round((Get-Item $outputFile).Length / 1MB, 2)
 	$outputSizes += $outputSize
 
-	Write-Host "[$currentFile/$totalFiles] Finished processing $($inputFile.Name). Output saved as $formattedDate.mp4" -ForegroundColor $colorSuccess
+	Write-Host "[$currentFile/$totalFiles] Finished processing $($inputFile.Name). Output saved as $formattedDate.mp4." -ForegroundColor $colorSuccess
 	Write-Host "`n$line"
 }
 
