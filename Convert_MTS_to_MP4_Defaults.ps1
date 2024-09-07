@@ -15,6 +15,7 @@ $line = "====================================================="
 $inputFolder = "."
 $outputFolder = "./output"
 $crfValue = 23
+$audioBitratePreset = "256k"
 $videoCodec = "libx264"
 $speedPreset = "medium"
 
@@ -86,8 +87,26 @@ foreach ($inputFile in $inputFiles) {
 
 	Write-Host "[$currentFile/$totalFiles] Converting $($file.Name) to MP4 using $videoCodec with CRF=$crfValue and preset=$speedPreset..." -ForegroundColor $colorHighlight
 
-	# Convert the .MTS file to .MP4 using ffmpeg with either NVIDIA or Intel CPU encoding
-	& ffmpeg -i "$filePath" -c:v $videoCodec -preset $speedPreset -crf $crfValue -c:a ac3 -b:a 256k "$outputFile"
+	# Check if the video is interlaced
+	Write-Host "Checking for interlaced footage..."
+	$isInterlaced = & ffprobe -v error -select_streams v:0 -show_entries stream=field_order -of default=noprint_wrappers=1:nokey=1 "$filePath"
+
+	# Prepare the base FFmpeg command
+	$ffmpegCommand = "ffmpeg -i `"$filePath`" -c:v $videoCodec -preset $speedPreset -crf $crfValue -c:a ac3 -b:a $audioBitratePreset"
+
+	# Add de-interlacing filter if the video is interlaced
+	if ($isInterlaced -eq "tt" -or $isInterlaced -eq "tb" -or $isInterlaced -eq "bt" -or $isInterlaced -eq "bb") {
+		Write-Host "Video is interlaced. Applying de-interlacing filter (yadif)." -ForegroundColor $colorHighlight
+		$ffmpegCommand += " -vf yadif"
+	} else {
+		Write-Host "Video is not interlaced. No de-interlacing needed." -ForegroundColor $colorSuccess
+	}
+
+	# Add the output file to the command
+	$ffmpegCommand += " `"$outputFile`""
+
+	# Run the FFmpeg command
+	Invoke-Expression $ffmpegCommand
 
 	# Prepare the command to add metadata to the MP4 file
 	$command = @(

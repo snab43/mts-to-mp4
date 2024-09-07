@@ -51,6 +51,31 @@ if (-not $crfValue) {
     $crfValue = 23
 }
 
+# Get audio quality
+Write-Host "`nChoose the audio bitrate for audio quality" -ForegroundColor $colorHighlight
+Write-Host "Audio is compressed to AC3 format." -ForegroundColor $colorSecondary
+Write-Host "`t1)  96 kbps - Low quality, smaller files"
+Write-Host "`t2) 128 kbps"
+Write-Host "`t3) 192 kbps"
+Write-Host "`t4) 256 kbps (default)"
+Write-Host "`t5) 320 kbps - Maximum quality, largest files"
+Write-Host "Default: '4'" -ForegroundColor $colorSecondary
+$audioBitrateChoice = Read-Host "Enter 1 to 5"
+if (-not $audioBitrateChoice) {
+    $audioBitrateChoice = 4
+    Write-Host "Using default value of '256 kbps' audio bitrate" -ForegroundColor $colorSuccess
+}
+
+$audioBitratePreset = ""
+switch ($audioBitrateChoice) {
+	1 { $audioBitratePreset = "96k" }
+	2 { $audioBitratePreset = "128k" }
+	3 { $audioBitratePreset = "192k" }
+	4 { $audioBitratePreset = "256k" }
+	5 { $audioBitratePreset = "320k" }
+	default { $speedPreset = "256k"; Write-Host "Invalid option. Defaulting to '256 kbps' bitrate." -ForegroundColor $colorError }
+}
+
 # Get encoding method
 Write-Host "`nChoose the encoding method" -ForegroundColor $colorHighlight
 Write-Host "It's recommended to use CPU encoding (1). NVIDIA GPU encoding is faster but the quality can be worse." -ForegroundColor $colorSecondary
@@ -67,7 +92,7 @@ if (-not $encodingChoice) {
 	$videoCodec = "h264_nvenc"
 } else {
 	$videoCodec = "libx264"
-	Write-Host "Invalid option. Defaulting to CPU (libx264) encoding." -ForegroundColor $colorError
+	Write-Host "Invalid option. Defaulting to 'CPU (libx264)' encoding." -ForegroundColor $colorError
 }
 
 # Get encoding speed
@@ -99,7 +124,7 @@ switch ($encodingSpeed) {
 	7 { $speedPreset = "veryfast" }
 	8 { $speedPreset = "superfast" }
 	9 { $speedPreset = "ultrafast" }
-	default { $speedPreset = "medium"; Write-Host "Invalid option. Defaulting to medium preset." -ForegroundColor $colorError }
+	default { $speedPreset = "medium"; Write-Host "Invalid option. Defaulting to 'Medium' encoding speed." -ForegroundColor $colorError }
 }
 
 # =====================================================
@@ -170,8 +195,26 @@ foreach ($inputFile in $inputFiles) {
 
 	Write-Host "[$currentFile/$totalFiles] Converting $($file.Name) to MP4 using $videoCodec with CRF=$crfValue and preset=$speedPreset..." -ForegroundColor $colorHighlight
 
-	# Convert the .MTS file to .MP4 using ffmpeg with either NVIDIA or Intel CPU encoding
-	& ffmpeg -i "$filePath" -c:v $videoCodec -preset $speedPreset -crf $crfValue -c:a ac3 -b:a 256k "$outputFile"
+	# Check if the video is interlaced
+	Write-Host "Checking for interlaced footage..."
+	$isInterlaced = & ffprobe -v error -select_streams v:0 -show_entries stream=field_order -of default=noprint_wrappers=1:nokey=1 "$filePath"
+
+	# Prepare the base FFmpeg command
+	$ffmpegCommand = "ffmpeg -i `"$filePath`" -c:v $videoCodec -preset $speedPreset -crf $crfValue -c:a ac3 -b:a $audioBitratePreset"
+
+	# Add de-interlacing filter if the video is interlaced
+	if ($isInterlaced -eq "tt" -or $isInterlaced -eq "tb" -or $isInterlaced -eq "bt" -or $isInterlaced -eq "bb") {
+		Write-Host "Video is interlaced. Applying de-interlacing filter (yadif)." -ForegroundColor $colorHighlight
+		$ffmpegCommand += " -vf yadif"
+	} else {
+		Write-Host "Video is not interlaced. No de-interlacing needed." -ForegroundColor $colorSuccess
+	}
+
+	# Add the output file to the command
+	$ffmpegCommand += " `"$outputFile`""
+
+	# Run the FFmpeg command
+	Invoke-Expression $ffmpegCommand
 
 	# Prepare the command to add metadata to the MP4 file
 	$command = @(
