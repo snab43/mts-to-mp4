@@ -209,7 +209,7 @@ foreach ($inputFile in $inputFiles) {
 	$ffmpegCommand += " `"$outputFile`""
 
 	# Run the FFmpeg command
-	Write-Host "[$currentFile/$totalFiles] Converting $($inputFile.Name) to $(formattedDate).mp4..."
+	Write-Host "[$currentFile/$totalFiles] Converting $($inputFile.Name) to $formattedDate.mp4..."
 	Invoke-Expression $ffmpegCommand
 
 	# Prepare the command to add metadata to the MP4 file
