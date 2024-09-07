@@ -8,6 +8,7 @@ $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 # Define output variables
 $colorSecondary = "Gray"
 $colorHighlight = "Yellow"
+$colorWarning = "Yellow"
 $colorError = "Red"
 $colorSuccess = "Green"
 $line = "====================================================="
@@ -54,11 +55,11 @@ if (-not $crfValue) {
 # Get audio quality
 Write-Host "`nChoose the audio bitrate for audio quality" -ForegroundColor $colorHighlight
 Write-Host "Audio is compressed to AC3 format." -ForegroundColor $colorSecondary
-Write-Host "`t1)  96 kbps - Low quality, smaller files"
-Write-Host "`t2) 128 kbps"
-Write-Host "`t3) 192 kbps"
-Write-Host "`t4) 256 kbps (default)"
-Write-Host "`t5) 320 kbps - Maximum quality, largest files"
+Write-Host "  1)  96 kbps - Low quality, smaller files"
+Write-Host "  2) 128 kbps"
+Write-Host "  3) 192 kbps"
+Write-Host "  4) 256 kbps (default)"
+Write-Host "  5) 320 kbps - Maximum quality, largest files"
 Write-Host "Default: '4'" -ForegroundColor $colorSecondary
 $audioBitrateChoice = Read-Host "Enter 1 to 5"
 if (-not $audioBitrateChoice) {
@@ -97,15 +98,15 @@ if (-not $encodingChoice) {
 
 # Get encoding speed
 Write-Host "`nChoose the encoding speed (affects file size and quality):" -ForegroundColor $colorHighlight
-Write-Host "`t1) Very slow - Best quality, smallest files"
-Write-Host "`t2) Slower"
-Write-Host "`t3) Slow"
-Write-Host "`t4) Medium (default)"
-Write-Host "`t5) Fast"
-Write-Host "`t6) Faster"
-Write-Host "`t7) Very fast"
-Write-Host "`t8) Super fast"
-Write-Host "`t9) Ultra fast - Lower quality, largest files"
+Write-Host "  1) Very slow - Best quality, smallest files"
+Write-Host "  2) Slower"
+Write-Host "  3) Slow"
+Write-Host "  4) Medium (default)"
+Write-Host "  5) Fast"
+Write-Host "  6) Faster"
+Write-Host "  7) Very fast"
+Write-Host "  8) Super fast"
+Write-Host "  9) Ultra fast - Lower quality, largest files"
 Write-Host "Default: '4'" -ForegroundColor $colorSecondary
 $encodingSpeed = Read-Host "Enter 1 to 9"
 if (-not $encodingSpeed) {
@@ -127,34 +128,52 @@ switch ($encodingSpeed) {
 	default { $speedPreset = "medium"; Write-Host "Invalid option. Defaulting to 'Medium' encoding speed." -ForegroundColor $colorError }
 }
 
+# Settings summary
+Write-Host "`n`nHere are your settings, does everything look correct?" -ForegroundColor $colorHighlight
+Write-Host "Input folder: $inputFolder"
+Write-Host "Output folder: $outputFolder"
+Write-Host "CRF value: $crfValue"
+Write-Host "Audio bitrate: $audioBitratePreset"
+Write-Host "Encoding method: $videoCodec"
+Write-Host "Encoding speed: $speedPreset"
+
+Write-Host "`nPress any key to continue..."
+$host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+
 # =====================================================
 # START ENCODING
 # =====================================================
 
 Write-Host "`n$line" -ForegroundColor $colorHighlight
 Write-Host "`n Starting Encode" -ForegroundColor $colorHighlight
-Write-Host "`n$line" -ForegroundColor $colorHighlight
+Write-Host "`n$line`n" -ForegroundColor $colorHighlight
 
 # Create the output folder if it doesn't exist
+Write-Host "Looking for output folder..."
 if (-not (Test-Path $outputFolder)) {
-	New-Item -ItemType Directory -Path $outputFolder
+	Write-Host "Output folder doesn't exist, creating it...." -ForegroundColor $colorWarning
+	$null = New-Item -ItemType Directory -Path $outputFolder
+	Write-Host "Output folder created.`n" -ForegroundColor $colorSuccess
+} else {
+	Write-Host "Found output folder.`n" -ForegroundColor $colorSuccess
 }
 
-# Get all .MTS files in the input folder
+# Create variables
 $inputFiles = Get-ChildItem -Path $inputFolder -Filter *.MTS
 $outputFiles = @()
 
-# Initialize lists for file sizes
 $inputSizes = @()
 $outputSizes = @()
 
-# Total number of files
 $totalFiles = $inputFiles.Count
 $currentFile = 0
 
 foreach ($inputFile in $inputFiles) {
 	$currentFile++
 	
+	# Starting
+	Write-Host "`n[$currentFile/$totalFiles] $($inputFile.Name)`n" -ForegroundColor $colorHighlight
+
 	# Get the full path of the .MTS file
 	$filePath = $inputFile.FullName
 
@@ -163,7 +182,7 @@ foreach ($inputFile in $inputFiles) {
 	$inputSizes += $inputSize
 
 	# Extract the metadata from the original file using exiftool
-	Write-Host "`n[$currentFile/$totalFiles] Extracting metadata for $($inputFile.Name)..."
+	Write-Host "Extracting metadata for $($inputFile.Name)..."
 	$exifData = & exiftool -json "$filePath" | ConvertFrom-Json
 
 	# Extract relevant metadata from the JSON object
@@ -176,7 +195,7 @@ foreach ($inputFile in $inputFiles) {
 	$exposureProgram = $exifData.ExposureProgram
 
 	if (-not $recordedDate) {
-		Write-Host "[$currentFile/$totalFiles] Error: Could not extract 'Recorded date'. Skipping $($inputFile.Name)" -ForegroundColor $colorError
+		Write-Host "Error: Could not extract 'Recorded date'. Skipping $($inputFile.Name)" -ForegroundColor $colorError
 		continue
 	}
 
@@ -191,7 +210,7 @@ foreach ($inputFile in $inputFiles) {
 	$outputFiles += "$formattedDate.mp4"
 
 	# Check if the video is interlaced
-	Write-Host "[$currentFile/$totalFiles] Checking for interlaced footage..."
+	Write-Host "Checking for interlaced footage..."
 	$isInterlaced = & ffprobe -v error -select_streams v:0 -show_entries stream=field_order -of default=noprint_wrappers=1:nokey=1 "$filePath"
 
 	# Prepare the base FFmpeg command
@@ -199,17 +218,17 @@ foreach ($inputFile in $inputFiles) {
 
 	# Add de-interlacing filter if the video is interlaced
 	if ($isInterlaced -eq "tt" -or $isInterlaced -eq "tb" -or $isInterlaced -eq "bt" -or $isInterlaced -eq "bb") {
-		Write-Host "[$currentFile/$totalFiles] Video is interlaced. Adding de-interlacing filter (yadif)." -ForegroundColor $colorHighlight
+		Write-Host "Video is interlaced. Adding de-interlacing filter (yadif)." -ForegroundColor $colorWarning
 		$ffmpegCommand += " -vf yadif"
 	} else {
-		Write-Host "[$currentFile/$totalFiles] Video is not interlaced. No de-interlacing needed."
+		Write-Host "Video is not interlaced. No de-interlacing needed."
 	}
 
 	# Add the output file to the command
 	$ffmpegCommand += " `"$outputFile`""
 
 	# Run the FFmpeg command
-	Write-Host "[$currentFile/$totalFiles] Converting $($inputFile.Name) to $formattedDate.mp4..."
+	Write-Host "Converting $($inputFile.Name) to $formattedDate.mp4..."
 	Invoke-Expression $ffmpegCommand
 
 	# Prepare the command to add metadata to the MP4 file
@@ -232,7 +251,7 @@ foreach ($inputFile in $inputFiles) {
 	# Add the output file path to the command
 	$command += "$outputFile"
 
-	Write-Host "[$currentFile/$totalFiles] Writing EXIF and XMP metadata..."
+	Write-Host "Writing EXIF and XMP metadata..."
 
 	# Apply the metadata using exiftool
 	& exiftool @command
@@ -242,9 +261,8 @@ foreach ($inputFile in $inputFiles) {
 	$outputSizes += $outputSize
 
 	# Finished
-	Write-Host "[$currentFile/$totalFiles] Finished processing $($inputFile.Name). Output saved as $($outputFile)." -ForegroundColor $colorSuccess
-	Write-Host "[$currentFile/$totalFiles] Input Size: $($inputSize) MB | Output Size: $($outputSize) MB | Change: $([math]::round((($outputSize - $inputSize) / $inputSize) * 100, 2))%"
-	Write-Host "`n$line"
+	Write-Host "Finished processing $($inputFile.Name). Output saved as $($outputFile)." -ForegroundColor $colorSuccess
+	Write-Host "Input Size: $($inputSize) MB | Output Size: $($outputSize) MB | Change: $([math]::round((($outputSize - $inputSize) / $inputSize) * 100, 2))%`n" -ForegroundColor $colorSecondary
 }
 
 # =====================================================
@@ -260,7 +278,7 @@ Write-Host "`n$line" -ForegroundColor $colorHighlight
 Write-Host "`n Summary" -ForegroundColor $colorHighlight
 Write-Host "`n$line" -ForegroundColor $colorHighlight
 
-# Settings summary
+# Settings
 Write-Host "`nSettings`n" -ForegroundColor $colorHighlight
 Write-Host "Input folder: $inputFolder"
 Write-Host "Output folder: $outputFolder"
@@ -269,14 +287,13 @@ Write-Host "Audio bitrate: $audioBitratePreset"
 Write-Host "Encoding method: $videoCodec"
 Write-Host "Encoding speed preset: $speedPreset"
 
-# Individual file summary
-Write-Host "`nIndividual Files" -ForegroundColor $colorHighlight
+# Individual files
+Write-Host "`nFiles`n" -ForegroundColor $colorHighlight
 for ($i = 0; $i -lt $inputFiles.Count; $i++) {
-	Write-Host "`n$($inputFiles[$i].Name) > $($outputFiles[$i])"
-	Write-Host "Input Size: $($inputSizes[$i]) MB | Output Size: $($outputSizes[$i]) MB | Change: $([math]::round((($outputSizes[$i] - $inputSizes[$i]) / $inputSizes[$i]) * 100, 2))%"
+	Write-Host "$($inputFiles[$i].Name) ($($inputSizes[$i]) MB) > $($outputFiles[$i]) ($($outputSizes[$i]) MB) [$([math]::round((($outputSizes[$i] - $inputSizes[$i]) / $inputSizes[$i]) * 100, 2))%]"
 }
 
-# Total file summary
+# Total files
 Write-Host "`nTotals`n" -ForegroundColor $colorHighlight
 
 $inputTotal = [math]::round(($inputSizes | Measure-Object -Sum | Select-Object -ExpandProperty Sum), 2)
@@ -289,10 +306,6 @@ Write-Host "Overall File Size Change: $sizeChange%"
 
 Write-Host "`nTotal time taken: $($elapsedTime.Hours)h $($elapsedTime.Minutes)m $($elapsedTime.Seconds)s"
 
-Write-Host "`n$line" -ForegroundColor $colorHighlight
-
 # End
 Write-Host "`nAll files processed. Press any key to close the window..." -ForegroundColor $colorSuccess
-
-# Wait for user to press any key before exiting
 $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
