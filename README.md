@@ -1,9 +1,14 @@
 # MTS to MP4 Bulk Converter
-## Powershell Script - Windows Only
 
-This script was created to help me bulk convert my camcorder's `.MTS` files to `.MP4` while preserving the Record Date **EXIF** metadata so it would be properly organized by photo software (iCloud Photos, Google Photos, etc). I was previously using HandBrake and found it to be cumbersome. Plus, it would remove the **EXIF** data needed. I added in some user prompts and options (with defaults) just to make it more interactive and customizable. You can select the input, output, file size, quality, and if you want to encode using your **CPU** or **NVIDIA GPU**. This script has only been tested on **Windows 10**.
+**Powershell Script - Windows Only**
 
-**Disclaimer:** ChatGPT 4o helped me write this script. Also, always be careful running scripts on your device. This script is intended to be non-destructive (it won't delete your original files), but I have no idea how your system will respond to it. Take caution and backup your files!
+This script was created to help me bulk convert my camcorder's `.MTS` files to `.MP4` while preserving the Record Date **EXIF** metadata. This way it would be properly organized by photo software (iCloud Photos, Google Photos, etc).
+
+I added in some user prompts and options (with defaults) just to make it more interactive and customizable. You can select the input, output, file size, quality, and if you want to encode using your **CPU** or **NVIDIA GPU**. This script has only been tested on **Windows 10**.
+
+## Disclaimer
+
+ChatGPT 4o helped me write this script. Also, always be careful running scripts on your device. This script is intended to be non-destructive (it won't delete your original files), but I have no idea how your system will respond to it. Take caution and backup your files!
 
 ## Features
 
