@@ -6,108 +6,24 @@
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 # Define output variables
-$colorSecondary = "Gray"
 $colorHighlight = "Yellow"
 $colorError = "Red"
 $colorSuccess = "Green"
 $line = "====================================================="
 
-# =====================================================
-# USER INPUT
-# =====================================================
-
-Write-Host "$line" -ForegroundColor $colorHighlight
-Write-Host "`n MTS to MP4 Bulk Converter" -ForegroundColor $colorHighlight
-Write-Host "`n$line" -ForegroundColor $colorHighlight
-
-# Get input folder
-Write-Host "`nEnter the input folder path" -ForegroundColor $colorHighlight
-Write-Host "Default: '.'" -ForegroundColor $colorSecondary
-$inputFolder = Read-Host "Input folder path"
-if (-not $inputFolder) {
-    $inputFolder = "."
-    Write-Host "Using default value of '.'" -ForegroundColor $colorSuccess
-}
-
-# Get output folder
-Write-Host "`nEnter the output folder path" -ForegroundColor $colorHighlight
-Write-Host "Default: './output'" -ForegroundColor $colorSecondary
-$outputFolder = Read-Host "Output folder path"
-if (-not $outputFolder) {
-    $outputFolder = "./output"
-    Write-Host "Using default value of './output'" -ForegroundColor $colorSuccess
-}
-
-# Get video quality (CRF value)
-Write-Host "`nEnter the Constant Rate Factor (CRF) for video quality" -ForegroundColor $colorHighlight
-Write-Host "The scale is 0 to 51 where 0 is lossless and 51 is worst quality possible. The recommended range is 17-28." -ForegroundColor $colorSecondary
-Write-Host "Default: '23'" -ForegroundColor $colorSecondary
-$crfValue = Read-Host "CRF"
-if (-not $crfValue) {
-    $crfValue = 23
-    Write-Host "Using default value of '23'" -ForegroundColor $colorSuccess
-} elseif (-not [int]::TryParse($crfValue, [ref]$null) -or $crfValue -lt 0 -or $crfValue -gt 51) {
-    Write-Host "Invalid CRF value entered. Defaulting to 23." -ForegroundColor $colorError
-    $crfValue = 23
-}
-
-# Get encoding method
-Write-Host "`nChoose the encoding method" -ForegroundColor $colorHighlight
-Write-Host "It's recommended to use CPU encoding (1). NVIDIA GPU encoding is faster but the quality can be worse." -ForegroundColor $colorSecondary
-Write-Host "`t1) CPU (libx264)"
-Write-Host "`t2) NVIDIA GPU (h264_nvenc)"
-Write-Host "Default: '1'" -ForegroundColor $colorSecondary
-$encodingChoice = Read-Host "Enter 1 or 2"
-if (-not $encodingChoice) {
-    $videoCodec = "libx264"
-    Write-Host "Using default value of 'CPU (libx264) encoding'" -ForegroundColor $colorSuccess
-} elseif ($encodingChoice -eq 1) {
-	$videoCodec = "libx264"
-} elseif ($encodingChoice -eq 2) {
-	$videoCodec = "h264_nvenc"
-} else {
-	$videoCodec = "libx264"
-	Write-Host "Invalid option. Defaulting to CPU (libx264) encoding." -ForegroundColor $colorError
-}
-
-# Get encoding speed
-Write-Host "`nChoose the encoding speed (affects file size and quality):" -ForegroundColor $colorHighlight
-Write-Host "`t1) Very slow - Best quality, smallest files"
-Write-Host "`t2) Slower"
-Write-Host "`t3) Slow"
-Write-Host "`t4) Medium (default)"
-Write-Host "`t5) Fast"
-Write-Host "`t6) Faster"
-Write-Host "`t7) Very fast"
-Write-Host "`t8) Super fast"
-Write-Host "`t9) Ultra fast - Lower quality, largest files"
-Write-Host "Default: '4'" -ForegroundColor $colorSecondary
-$encodingSpeed = Read-Host "Enter 1 to 9"
-if (-not $encodingSpeed) {
-    $encodingSpeed = 4
-    Write-Host "Using default value of 'Medium' encoding speed" -ForegroundColor $colorSuccess
-}
-
-$speedPreset = ""
-switch ($encodingSpeed) {
-	1 { $speedPreset = "veryslow" }
-	2 { $speedPreset = "slower" }
-	3 { $speedPreset = "slow" }
-	4 { $speedPreset = "medium" }
-	5 { $speedPreset = "fast" }
-	6 { $speedPreset = "faster" }
-	7 { $speedPreset = "veryfast" }
-	8 { $speedPreset = "superfast" }
-	9 { $speedPreset = "ultrafast" }
-	default { $speedPreset = "medium"; Write-Host "Invalid option. Defaulting to medium preset." -ForegroundColor $colorError }
-}
+# Default options
+$inputFolder = "."
+$outputFolder = "./output"
+$crfValue = 23
+$videoCodec = "libx264"
+$speedPreset = "medium"
 
 # =====================================================
 # START ENCODING
 # =====================================================
 
-Write-Host "`n$line" -ForegroundColor $colorHighlight
-Write-Host "`n Starting Encode" -ForegroundColor $colorHighlight
+Write-Host "$line" -ForegroundColor $colorHighlight
+Write-Host "`n MTS to MP4 Bulk Converter" -ForegroundColor $colorHighlight
 Write-Host "`n$line" -ForegroundColor $colorHighlight
 
 # Create the output folder if it doesn't exist
