@@ -29,7 +29,7 @@ Before using this script, ensure you have the following tools installed and adde
    ExifTool is a platform-independent Perl library plus a command-line application for reading, writing, and editing meta-information in a wide variety of files.  
    Download it [here](https://exiftool.org/#downloads).
 
-### Adding ffmpeg and ExifTool to Path
+### Adding FFmpeg and ExifTool to Path
 
 To ensure that `FFmpeg` and `ExifTool` can be accessed globally by this script, you need to add them to your system’s Path:
 
