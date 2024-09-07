@@ -133,7 +133,9 @@ foreach ($inputFile in $inputFiles) {
 	$outputSize = [math]::round((Get-Item $outputFile).Length / 1MB, 2)
 	$outputSizes += $outputSize
 
+	# Finished
 	Write-Host "[$currentFile/$totalFiles] Finished processing $($inputFile.Name). Output saved as $($outputFile)." -ForegroundColor $colorSuccess
+	Write-Host "[$currentFile/$totalFiles] Input Size: $($inputSize) MB | Output Size: $($outputSize) MB | Change: $([math]::round((($outputSize - $inputSize) / $inputSize) * 100, 2))%"
 	Write-Host "`n$line"
 }
 
@@ -155,6 +157,7 @@ Write-Host "`nSettings`n" -ForegroundColor $colorHighlight
 Write-Host "Input folder: $inputFolder"
 Write-Host "Output folder: $outputFolder"
 Write-Host "CRF value: $crfValue"
+Write-Host "Audio bitrate: $audioBitratePreset"
 Write-Host "Encoding method: $videoCodec"
 Write-Host "Encoding speed preset: $speedPreset"
 
